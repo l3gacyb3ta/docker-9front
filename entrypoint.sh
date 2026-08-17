@@ -29,6 +29,8 @@ fi
 #                             17019 rcpu, 564 exportfs, 567 authsrv.
 #   -monitor unix socket      escape hatch: exec_in_pod + socat to reach
 #                             the QEMU monitor without killing console
+
+exec 3< <(printf '\n'; sleep infinity)
 exec qemu-system-x86_64 \
     -M pc \
     -accel tcg,thread=multi \
@@ -38,6 +40,6 @@ exec qemu-system-x86_64 \
     -nographic \
     -drive file="$DISK",format=qcow2,if=none,id=hd0,cache=writeback \
     -device virtio-blk-pci,drive=hd0 \
-    -netdev user,id=n0,hostfwd=tcp::17019-:17019,hostfwd=tcp::564-:564,hostfwd=tcp::567-:567 \
+    -netdev user,id=n0,hostfwd=tcp::17019-:17019,hostfwd=tcp::17020-:17019,hostfwd=tcp::567-:567 \
     -device e1000,netdev=n0 \
-    -monitor unix:/tmp/qemu-monitor.sock,server,nowait
+    -monitor unix:/tmp/qemu-monitor.sock,server,nowait <&3
