@@ -12,6 +12,9 @@
 					docker-ls
 					docker
 					drawterm-wayland
+					plan9port
+					mtools
+					python3
 				];
 
 				shellHook = ''

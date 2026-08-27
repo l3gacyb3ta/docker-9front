@@ -1,0 +1,24 @@
+services:
+  9front:
+    build: .
+    # The image is fetched into the volume on first start and kept there.
+    environment:
+      DISK_IMAGE_URL: "https://example.invalid/9front-cpu.qcow2"
+      # DISK_IMAGE_SHA256: "..."
+      # Set on first start to take ownership of the image's credentials.
+      # P9_PASSWORD: "change-me"
+      QEMU_MEM: "1024"
+      QEMU_CPUS: "2"
+    ports:
+      - "17019:17019"   # rcpu -- the cpu service
+      - "17020:17020"   # tls 9fs
+      - "567:567"       # authsrv
+    volumes:
+      - 9front-data:/data
+    # Optional: massively faster if the host exposes KVM.
+    # devices:
+    #   - /dev/kvm:/dev/kvm
+    stop_grace_period: 120s
+
+volumes:
+  9front-data:

@@ -1,0 +1,15 @@
+#!/bin/sh
+# Healthy means the cpu service is actually answering with its auth banner,
+# not merely that qemu is alive.
+exec python3 - "$@" <<'PY'
+import socket, sys
+s = socket.socket(); s.settimeout(5)
+try:
+    s.connect(("127.0.0.1", 17019))
+    banner = s.recv(32)
+except Exception as e:
+    print("rcpu unreachable: %s" % e); sys.exit(1)
+if b"@" not in banner:
+    print("unexpected banner: %r" % banner); sys.exit(1)
+print("rcpu ok: %s" % banner.decode("ascii", "replace").strip("\0"))
+PY

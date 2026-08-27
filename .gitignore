@@ -1,2 +1,4 @@
 *.qcow2
 .direnv/**
+.provisioned
+__pycache__/
