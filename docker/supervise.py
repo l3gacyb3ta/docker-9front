@@ -14,7 +14,11 @@ import os, select, signal, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import vm
 
-HALT_TIMEOUT = float(os.environ.get("HALT_TIMEOUT", "90"))
+# Kubernetes SIGKILLs the pod 30s after SIGTERM by default and Orchard does not
+# expose terminationGracePeriodSeconds, so waiting longer than that just means
+# getting killed mid-flush. Raise it for docker/compose, where the grace period
+# is yours to set (stop_grace_period).
+HALT_TIMEOUT = float(os.environ.get("HALT_TIMEOUT", "25"))
 stopping = False
 
 

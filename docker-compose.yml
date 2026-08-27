@@ -9,6 +9,8 @@ services:
       # P9_PASSWORD: "change-me"
       QEMU_MEM: "1024"
       QEMU_CPUS: "2"
+      # compose lets you set a real grace period, so fshalt can take its time
+      HALT_TIMEOUT: "90"
     ports:
       - "17019:17019"   # rcpu -- the cpu service
       - "17020:17020"   # tls 9fs

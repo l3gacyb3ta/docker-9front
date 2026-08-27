@@ -182,6 +182,44 @@ again.
 
 Leave `P9_PASSWORD` unset to keep whatever credentials the published image has.
 
+### Deploying on Orchard
+
+Push this repo to GitHub (the images are gitignored, which is the point — the
+qcow2 is fetched at runtime), publish `cpu.qcow2` somewhere the pod can reach
+over HTTPS, and deploy with build type `dockerfile`.
+
+Things that are specific to Kubernetes rather than plain Docker:
+
+- **Expose the ports with an external *service*, not an ingress.** Orchard's
+  ingress terminates TLS and routes an HTTP host/path. rcpu speaks its own TLS
+  protocol on 17019 and authsrv is raw TCP on 567; neither survives an HTTP
+  router. Create external services for 17019 and 567 instead.
+- **Check what port the external service actually hands out.** If it is a
+  NodePort you get something in the 30000–32767 range rather than 567, and the
+  secstore workaround from the local setup comes back — pass drawterm
+  `-a tcp!host!<port> -s tcp!host!1`. A LoadBalancer that preserves 567 needs
+  no workaround.
+- **Size the volume for the image, not the download.** `cpu.qcow2` is ~525&nbsp;MB
+  on the wire but the qcow2 grows toward its 3.7&nbsp;GB virtual size as the guest
+  writes, and a gzipped download needs room for both copies at once. The 1Gi
+  PVC default is far too small; use 10Gi.
+- **One replica.** The qcow2 is a single-writer file. Attaching a PVC makes
+  Orchard force the `recreate` strategy, which is what you want — a rolling
+  update would start a second pod against the same disk.
+- **No `/dev/kvm`**, so it runs on TCG. Give it ~2Gi of memory (1Gi guest plus
+  qemu overhead) and 1–2 cores, and expect the first boot to take a while.
+- **The Dockerfile `HEALTHCHECK` is ignored by Kubernetes** — it only applies to
+  Docker. The pod will report ready before 9front has finished booting. `9health`
+  still works by hand: `orchard exec ... 9health`.
+- **`EXPOSE` lists three ports**, so port auto-detection is a coin flip. Set the
+  deployment port to 17019 explicitly.
+
+Shutdown is the one rough edge: Orchard does not expose
+`terminationGracePeriodSeconds`, so Kubernetes SIGKILLs 30s after SIGTERM.
+`HALT_TIMEOUT` defaults to 25s to stay inside that. If hjfs has a lot to flush
+it can still be cut off, and 9front will want to check the file system on the
+next boot.
+
 ## Editing plan9.ini without booting
 
 `9fat.sh` exports the qcow2 as a raw file over FUSE (no root, no nbd) and drives
